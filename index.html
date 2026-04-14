@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ScoutAI — Football Predictions</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#1D9E75;--primary-dark:#0F6E56;--primary-bg:#F0FBF7;
+  --accent:#D97706;--danger:#DC2626;
+  --bg:#F9FAFB;--surface:#FFFFFF;--card:#FFFFFF;--card-hover:#F9FAFB;
+  --text:#111827;--text2:#6B7280;--text3:#9CA3AF;
+  --border:#E5E7EB;--border2:#D1D5DB;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 6px rgba(0,0,0,.06),0 2px 4px rgba(0,0,0,.04);
+  --r:8px;--rl:12px;--rx:16px;--rpill:100px;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+a{color:var(--primary)}
+button{cursor:pointer;font-family:'Inter',sans-serif;border:none;outline:none}
+button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes grow{from{width:0}}
+
+/* Header */
+.hdr{position:sticky;top:0;z-index:100;height:56px;background:rgba(255,255,255,.95);border-bottom:1px solid var(--border);backdrop-filter:blur(8px)}
+.hdr-in{display:flex;align-items:center;justify-content:space-between;height:100%}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:var(--text)}
+.logo em{color:var(--primary);font-style:normal}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.date-chip{font-size:11px;color:var(--text2);background:var(--bg);border:1px solid var(--border);padding:3px 10px;border-radius:var(--rpill);font-weight:500}
+.btn-scan{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:var(--primary);color:#fff;font-size:13px;font-weight:600;border-radius:var(--r);transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.btn-scan:hover{background:var(--primary-dark)}
+.btn-scan:disabled{opacity:.55;cursor:not-allowed}
+.sp{animation:spin .9s linear infinite}
+
+/* Stats */
+.stats-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 0}
+.stats-row{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column;gap:1px}
+.stat-l{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)}
+.stat-v{font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1;color:var(--text)}
+.stat-v.g{color:var(--primary)}.stat-v.a{color:var(--accent)}
+.sdiv{width:1px;height:28px;background:var(--border)}
+
+/* Edge banner */
+.e-banner{background:linear-gradient(135deg,#FFFBEB,#FFF7ED);border-bottom:1px solid #FDE68A;padding:9px 0;display:none}
+.e-banner-in{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.e-banner strong{font-size:13px;color:var(--accent)}
+.e-banner span{font-size:12px;color:#92400E}
+.e-banner-btn{padding:4px 12px;background:rgba(217,119,6,.1);color:var(--accent);font-size:12px;font-weight:500;border-radius:var(--r);border:1px solid #FCD34D}
+
+/* Tabs */
+.tabs-bar{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:56px;z-index:90}
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:12px 16px;font-size:13px;font-weight:500;color:var(--text2);background:none;border-bottom:2px solid transparent;white-space:nowrap;flex-shrink:0;transition:.15s}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--primary);border-bottom-color:var(--primary)}
+.tab-e{color:var(--accent)!important;opacity:.7}
+.tab-e.on{opacity:1;border-bottom-color:var(--accent)!important}
+.e-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;margin-right:4px;vertical-align:middle}
+.ac-pip{background:var(--primary);color:#fff;font-size:10px;font-weight:700;width:17px;height:17px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-left:3px}
+
+/* Main */
+.main{padding:20px 0 110px;min-height:50vh}
+
+/* Empty */
+.empty{text-align:center;padding:60px 16px;display:flex;flex-direction:column;align-items:center}
+.empty-ico{font-size:48px;margin-bottom:16px}
+.empty h2{font-size:20px;font-weight:600;margin-bottom:8px;color:var(--text)}
+.empty p{font-size:14px;color:var(--text2);max-width:400px;line-height:1.7;margin-bottom:20px}
+.btn-lg{padding:10px 24px;background:var(--primary);color:#fff;font-size:14px;font-weight:600;border-radius:var(--r);border:none;cursor:pointer;box-shadow:var(--shadow)}
+.btn-lg:hover{background:var(--primary-dark)}
+
+/* Error */
+.err-box{background:#FEF2F2;border:1px solid #FECACA;border-radius:var(--rl);padding:16px;margin:8px 0;display:none}
+.err-box p{color:var(--danger);font-size:13px;margin-bottom:10px;line-height:1.6}
+.btn-retry{padding:7px 14px;background:var(--danger);color:#fff;font-size:13px;font-weight:500;border-radius:var(--r)}
+
+/* Loading */
+.loading{display:flex;align-items:center;gap:9px;padding:14px 0;color:var(--text2);font-size:14px}
+.ld{width:7px;height:7px;border-radius:50%;background:var(--primary);animation:pulse 1.2s ease infinite}
+
+/* Section */
+.sec-hdr{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.sec-t{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:.5px;color:var(--text)}
+.sec-c{font-size:12px;color:var(--text3)}
+
+/* League tag */
+.lt{display:inline-block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding:2px 8px;border-radius:var(--rpill);background:var(--primary-bg);color:var(--primary);margin-bottom:4px}
+
+/* Match card */
+.mc{background:var(--card);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:.15s;animation:fadeIn .25s ease;box-shadow:var(--shadow)}
+.mc:hover{background:var(--card-hover);border-color:var(--border2);box-shadow:var(--shadow-md)}
+.mc.sel{border-color:var(--primary);background:var(--primary-bg)}
+.mc.eh{border-color:#FCD34D;background:#FFFBEB}
+.mc.ee{border-color:#FCA5A5;background:#FEF2F2}
+.mc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px}
+.mc-left{flex:1}
+.mc-teams{font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px}
+.mc-when{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px}
+.mc-when .dot{width:3px;height:3px;border-radius:50%;background:var(--text3);display:inline-block}
+.mc-r{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.chk{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+.mc.sel .chk{background:var(--primary);border-color:var(--primary)}
+.chk::after{content:'';width:5px;height:8px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px);display:none}
+.mc.sel .chk::after{display:block}
+
+/* Edge badge */
+.eb{display:inline-flex;font-size:10px;font-weight:600;padding:2px 8px;border-radius:var(--rpill);cursor:pointer;white-space:nowrap}
+.eb.low{background:#EFF6FF;color:#2563EB;border:1px solid #BFDBFE}
+.eb.medium{background:#FFFBEB;color:#D97706;border:1px solid #FDE68A}
+.eb.high{background:#FEF3C7;color:#B45309;border:1px solid #FCD34D}
+.eb.elite{background:#FEE2E2;color:#DC2626;border:1px solid #FECACA}
+
+/* Pred bar */
+.pr{display:flex;align-items:center;gap:8px;margin-top:6px}
+.pr-l{font-size:12px;color:var(--text2);min-width:110px;flex-shrink:0;font-weight:500}
+.bar-bg{flex:1;height:6px;background:#F3F4F6;border-radius:var(--rpill);overflow:hidden}
+.bar{height:100%;border-radius:var(--rpill);animation:grow .7s ease}
+.bar.g{background:var(--primary)}.bar.a{background:var(--accent)}.bar.r{background:var(--danger)}
+.pct{font-size:12px;font-weight:600;min-width:34px;text-align:right}
+.pct.g{color:var(--primary)}.pct.a{color:var(--accent)}.pct.r{color:var(--danger)}
+
+/* Top 10 */
+.t10{display:flex;align-items:flex-start;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rl);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:.15s;animation:fadeIn .25s ease;box-shadow:var(--shadow)}
+.t10:hover{background:var(--card-hover);border-color:var(--border2);box-shadow:var(--shadow-md)}
+.t10.sel{border-color:var(--primary);background:var(--primary-bg)}
+.rank{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text3);min-width:26px;line-height:1;padding-top:2px}
+.rank.top{color:var(--accent)}
+.t10-body{flex:1}
+.t10-teams{font-size:14px;font-weight:600;margin-bottom:2px}
+.t10-sub{font-size:12px;color:var(--text2)}
+.t10-pct{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--primary);flex-shrink:0;line-height:1}
+
+/* League */
+.lg-sec{margin-bottom:32px}
+.lg-name{font-family:'Bebas Neue',sans-serif;font-size:17px;margin-bottom:10px;letter-spacing:.5px;color:var(--text)}
+
+/* Edge */
+.edge-intro{background:linear-gradient(135deg,#FFFBEB,#FFF7ED);border:1px solid #FDE68A;border-radius:var(--rl);padding:18px;margin-bottom:20px}
+.edge-intro-t{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--accent);margin-bottom:5px;letter-spacing:.5px}
+.edge-intro p{font-size:13px;color:#78350F;line-height:1.6}
+.edge-card{background:var(--card);border:1px solid #FDE68A;border-radius:var(--rl);padding:14px;margin-bottom:9px;cursor:pointer;transition:.15s;box-shadow:var(--shadow)}
+.edge-card:hover{border-color:#FCD34D;box-shadow:var(--shadow-md)}
+.ec-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px}
+.ec-teams{font-size:14px;font-weight:600;margin-top:3px}
+.ec-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.e-score{background:#FEF3C7;border:1px solid #FDE68A;border-radius:var(--r);padding:6px 12px;text-align:center;flex-shrink:0}
+.es-v{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--accent);line-height:1}
+.es-l{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:#B45309;font-weight:600}
+.ec-factors{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.pill{font-size:11px;padding:3px 9px;border-radius:var(--rpill);background:#F3F4F6;color:var(--text2);border:1px solid var(--border);font-weight:500}
+.pill.pos{background:#F0FDF4;color:#15803D;border-color:#BBF7D0}
+.pill.neg{background:#FEF2F2;color:#DC2626;border-color:#FECACA}
+.ec-verdict{font-size:12px;font-style:italic;color:var(--text2);border-top:1px solid var(--border);padding-top:7px;margin-top:8px;line-height:1.5}
+
+/* Acca tray */
+.ac-tray{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 16px;z-index:200;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+.ac-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.ac-title{font-size:14px;font-weight:600;color:var(--text)}
+.ac-clear{font-size:12px;color:var(--text3);background:none;text-decoration:underline;border:none;cursor:pointer}
+.ac-picks{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.ac-chip{font-size:11px;padding:3px 9px;background:var(--bg);border:1px solid var(--border);border-radius:var(--rpill);color:var(--text2);font-weight:500}
+.ac-foot{display:flex;align-items:center;justify-content:space-between}
+.ac-prob{font-size:13px;color:var(--text2)}
+.ac-prob strong{color:var(--primary);font-weight:600}
+.btn-acca{padding:8px 18px;background:var(--primary);color:#fff;font-size:13px;font-weight:600;border-radius:var(--r);border:none;cursor:pointer;box-shadow:var(--shadow)}
+
+/* Modals */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:none;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--rx);width:100%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.m-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)}
+.m-title{font-size:14px;font-weight:600;color:var(--text)}
+.m-x{width:26px;height:26px;border-radius:50%;background:var(--bg);color:var(--text2);font-size:12px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer}
+.m-x:hover{background:var(--border)}
+.m-body{padding:18px}
+.em{background:var(--bg);border:1px solid #FDE68A;border-radius:var(--rl);padding:14px;margin-bottom:10px}
+.em-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px}
+.em-teams{font-size:14px;font-weight:600;color:var(--text)}
+.em-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.em-f{font-size:12px;padding:3px 0;display:flex;align-items:center;gap:6px;font-weight:500}
+.em-f::before{content:'▸';font-size:9px;flex-shrink:0}
+.em-v{font-size:12px;font-style:italic;color:var(--text2);border-top:1px solid var(--border);padding-top:7px;margin-top:7px;line-height:1.5}
+.am-top{text-align:center;margin-bottom:18px}
+.am-title{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--primary);letter-spacing:.5px}
+.am-sub{font-size:13px;color:var(--text2);margin-top:3px}
+.am-pick{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.am-pick:last-of-type{border-bottom:none}
+.am-l{font-weight:600;color:var(--text)}.am-p{color:var(--text2);font-size:12px}.am-c{color:var(--primary);font-weight:600}
+.am-sum{display:flex;justify-content:space-between;background:var(--bg);border-radius:var(--r);padding:10px 14px;margin-top:8px;font-size:13px;border:1px solid var(--border)}
+
+/* Source badge */
+.source-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--rpill);margin-bottom:14px}
+.source-badge.live{background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0}
+.source-badge.gen{background:#F0F9FF;color:#0369A1;border:1px solid #BAE6FD}
+
+footer{border-top:1px solid var(--border);padding:16px 0;background:var(--surface)}
+footer .wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+footer .fs{font-size:12px;color:var(--text3)}
+#toast{position:fixed;bottom:82px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;border-radius:var(--rpill);padding:8px 18px;font-size:13px;z-index:500;white-space:nowrap;display:none;box-shadow:var(--shadow-md)}
+
+@media(max-width:600px){.sdiv{display:none}.pr-l{min-width:80px;font-size:11px}.tab{padding:10px 12px;font-size:12px}.date-chip{display:none}}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="wrap hdr-in">
+    <div class="logo">Scout<em>AI</em></div>
+    <div class="hdr-r">
+      <span class="date-chip" id="dateLbl"></span>
+      <button class="btn-scan" id="scanBtn" onclick="scan()">
+        <svg id="sp" class="sp" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:none"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+        <span id="scanLbl">Scan Today</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="wrap"><div class="stats-row">
+    <div class="stat"><span class="stat-l">Matches</span><span class="stat-v" id="sM">—</span></div>
+    <div class="sdiv"></div>
+    <div class="stat"><span class="stat-l">Top Pick</span><span class="stat-v g" id="sT">—</span></div>
+    <div class="sdiv"></div>
+    <div class="stat"><span class="stat-l">Leagues</span><span class="stat-v" id="sL">—</span></div>
+    <div class="sdiv"></div>
+    <div class="stat"><span class="stat-l">Edge Picks</span><span class="stat-v a" id="sE">—</span></div>
+  </div></div>
+</div>
+
+<div class="e-banner" id="eBanner">
+  <div class="wrap e-banner-in">
+    <span>⚡</span>
+    <div><strong>The Edge is live</strong>&nbsp;<span>Narrative intelligence has analysed today's fixtures</span></div>
+    <button class="e-banner-btn" onclick="showEdgeReport()">View Report</button>
+  </div>
+</div>
+
+<div class="tabs-bar">
+  <div class="wrap"><nav class="tabs">
+    <button class="tab on" onclick="goTab('top10',this)">Top 10</button>
+    <button class="tab" onclick="goTab('leagues',this)">By League</button>
+    <button class="tab" onclick="goTab('goals',this)">Goals</button>
+    <button class="tab" onclick="goTab('wins',this)">Straight Wins</button>
+    <button class="tab tab-e" onclick="goTab('edge',this)"><span class="e-dot"></span>The Edge</button>
+    <button class="tab" onclick="goTab('acca',this)">Acca<span class="ac-pip" id="acPip" style="display:none">0</span></button>
+  </nav></div>
+</div>
+
+<main class="main">
+  <div class="wrap">
+    <div class="err-box" id="errBox"><p id="errMsg"></p><button class="btn-retry" onclick="scan()">Try Again</button></div>
+    <div class="empty" id="emptyState">
+      <div class="empty-ico">⚽</div>
+      <h2>Scout today's matches</h2>
+      <p>Real fixtures from football-data.org — Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Championship and Champions League. Only upcoming matches shown.</p>
+      <button class="btn-lg" onclick="scan()">Scan Today's Predictions</button>
+    </div>
+    <div id="p-top10"   style="display:none"></div>
+    <div id="p-leagues" style="display:none"></div>
+    <div id="p-goals"   style="display:none"></div>
+    <div id="p-wins"    style="display:none"></div>
+    <div id="p-edge"    style="display:none"></div>
+    <div id="p-acca"    style="display:none"></div>
+  </div>
+</main>
+
+<div class="ac-tray" id="acTray" style="display:none">
+  <div class="ac-top"><div class="ac-title">Smart Acca</div><button class="ac-clear" onclick="clearAcca()">Clear all</button></div>
+  <div class="ac-picks" id="acPicks"></div>
+  <div class="ac-foot"><span class="ac-prob">Combined: <strong id="acProb">—</strong></span><button class="btn-acca" onclick="buildAcca()">Build Acca ↗</button></div>
+</div>
+
+<div class="ov" id="edgeModal" onclick="closeOv('edgeModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="m-hdr"><div class="m-title">⚡ The Edge — Narrative Report</div><button class="m-x" onclick="closeOv('edgeModal')">✕</button></div>
+    <div class="m-body" id="edgeBody"></div>
+  </div>
+</div>
+
+<div class="ov" id="accaModal" onclick="closeOv('accaModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="m-hdr"><div class="m-title">Your Smart Accumulator</div><button class="m-x" onclick="closeOv('accaModal')">✕</button></div>
+    <div class="m-body" id="accaBody"></div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span class="logo" style="font-size:18px">Scout<em>AI</em></span>
+    <span class="fs">Fixtures: football-data.org · Predictions for entertainment only · Gamble responsibly</span>
+  </div>
+</footer>
+<div id="toast"></div>
+
+<script>
+var preds=[], picks=new Set(), curTab='top10', scanning=false, dataSource='';
+
+window.addEventListener('DOMContentLoaded', function(){
+  var now = new Date();
+  document.getElementById('dateLbl').textContent = now.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  window.addEventListener('keydown',function(e){ if(e.key==='Escape') document.querySelectorAll('.ov').forEach(function(o){o.style.display='none';}); });
+});
+
+function scan(){
+  if(scanning) return;
+  scanning=true; preds=[]; picks.clear(); updateTray();
+  setLoading(true); hideEl('emptyState'); hideEl('errBox');
+  document.querySelectorAll('[id^="p-"]').forEach(function(p){p.style.display='none';});
+  document.getElementById('eBanner').style.display='none';
+  var panel=document.getElementById('p-top10');
+  panel.style.display='';
+  panel.innerHTML='<div class="loading"><div class="ld"></div>Loading today\'s fixtures...</div>';
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
+  document.querySelector('.tab').classList.add('on');
+  curTab='top10';
+
+  fetch('/api/predict')
+    .then(function(r){ return r.json().then(function(d){return{s:r.status,d:d};}); })
+    .then(function(r){
+      if(r.s!==200||r.d.error){ throw new Error(r.d.error||'Server error '+r.s); }
+      preds=r.d.predictions||[];
+      dataSource=r.d.source||'';
+      if(r.d.message && !preds.length){
+        setLoading(false); scanning=false;
+        document.getElementById('p-top10').innerHTML='<div style="text-align:center;padding:3rem 1rem"><div style="font-size:40px;margin-bottom:12px">📅</div><p style="font-size:15px;font-weight:600;margin-bottom:8px">No upcoming fixtures today</p><p style="font-size:13px;color:var(--text2);max-width:360px;margin:0 auto;line-height:1.7">'+r.d.message+'</p></div>';
+        updateStats(); return;
+      }
+      if(!preds.length){ throw new Error('No predictions returned. Please try again.'); }
+      var ed=r.d.edge||[];
+      ed.forEach(function(e){ if(preds[e.index]) preds[e.index]._edge=e; });
+      var hc=preds.filter(function(m){return m._edge&&(m._edge.edge_level==='high'||m._edge.edge_level==='elite');}).length;
+      document.getElementById('sE').textContent=hc;
+      if(hc>0) document.getElementById('eBanner').style.display='';
+      updateStats(); renderPanel('top10'); setLoading(false); scanning=false;
+    })
+    .catch(function(err){ setLoading(false); scanning=false; showErr(err.message||'Something went wrong.'); });
+}
+
+function goTab(tab,btn){
+  curTab=tab;
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
+  if(btn) btn.classList.add('on');
+  if(!preds.length){showEl('emptyState');return;}
+  renderPanel(tab);
+}
+
+function renderPanel(tab){
+  document.querySelectorAll('[id^="p-"]').forEach(function(p){p.style.display='none';});
+  hideEl('emptyState'); hideEl('errBox');
+  var panel=document.getElementById('p-'+tab);
+  if(!panel) return; panel.style.display='';
+  if(tab==='top10')   panel.innerHTML=renderTop10();
+  if(tab==='leagues') panel.innerHTML=renderLeagues();
+  if(tab==='goals')   panel.innerHTML=renderGoals();
+  if(tab==='wins')    panel.innerHTML=renderWins();
+  if(tab==='edge')    panel.innerHTML=renderEdge();
+  if(tab==='acca')    panel.innerHTML=renderAccaTab();
+}
+
+function pc(n){return n>=70?'g':n>=55?'a':'r';}
+
+function whenStr(m){
+  if(m.is_live) return '<span style="color:#DC2626;font-weight:700;font-size:11px">● LIVE</span>';
+  if(!m.kickoff_iso) return '';
+  var d=new Date(m.kickoff_iso);
+  var date=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
+  var time=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'UTC'});
+  var ahead = m.days_ahead || 0;
+  var label = '';
+  if(ahead===1) label='<span style="background:#EFF6FF;color:#2563EB;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;margin-right:4px">TOMORROW</span>';
+  else if(ahead>1) label='<span style="background:#F5F3FF;color:#7C3AED;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;margin-right:4px">IN '+ahead+' DAYS</span>';
+  return label+date+' · '+time+' GMT';
+}
+
+function eBadge(m,idx){
+  if(!m._edge||m._edge.edge_level==='none') return '';
+  var lbl={low:'Low Edge',medium:'⚡ Edge',high:'⚡ High Edge',elite:'🔥 Elite'};
+  return '<span class="eb '+m._edge.edge_level+'" onclick="event.stopPropagation();showMatchEdge('+idx+')">'+(lbl[m._edge.edge_level]||'')+'</span>';
+}
+
+function sourceBadge(){
+  if(!dataSource) return '';
+  return '<div class="source-badge live">🟢 Real fixtures · football-data.org · Upcoming only</div>';
+}
+
+function mCard(m,idx){
+  var sel=picks.has(idx)?'sel':'';
+  var ecl=m._edge?(m._edge.edge_level==='elite'?'ee':m._edge.edge_level==='high'?'eh':''):'';
+  return '<div class="mc '+sel+' '+ecl+'" id="mc'+idx+'" onclick="togglePick('+idx+')">'
+    +'<div class="mc-top"><div class="mc-left">'
+    +'<span class="lt">'+m.league+'</span>'
+    +'<div class="mc-teams">'+m.home+' vs '+m.away+'</div>'
+    +'<div class="mc-when">'+whenStr(m)+'</div>'
+    +'</div>'
+    +'<div class="mc-r">'+eBadge(m,idx)+'<div class="chk"></div></div></div>'
+    +'<div class="pr"><span class="pr-l">'+m.prediction+'</span><div class="bar-bg"><div class="bar '+pc(m.confidence)+'" style="width:'+m.confidence+'%"></div></div><span class="pct '+pc(m.confidence)+'">'+m.confidence+'%</span></div>'
+    +(m.goals_prediction&&m.goals_confidence?'<div class="pr"><span class="pr-l">'+m.goals_prediction+'</span><div class="bar-bg"><div class="bar '+pc(m.goals_confidence)+'" style="width:'+m.goals_confidence+'%"></div></div><span class="pct '+pc(m.goals_confidence)+'">'+m.goals_confidence+'%</span></div>':'')
+    +'</div>';
+}
+
+function renderTop10(){
+  var sorted=preds.slice().sort(function(a,b){return b.confidence-a.confidence;}).slice(0,10);
+  var html=sourceBadge()+'<div class="sec-hdr"><div class="sec-t">Top 10 Picks Today</div><span class="sec-c">by confidence</span></div>';
+  sorted.forEach(function(m,i){
+    var idx=preds.indexOf(m),sel=picks.has(idx)?'sel':'';
+    html+='<div class="t10 '+sel+'" id="tc'+idx+'" onclick="togglePick('+idx+')">'
+      +'<div class="rank '+(i<3?'top':'')+'">'+( i+1)+'</div>'
+      +'<div class="t10-body"><div class="t10-teams">'+m.home+' vs '+m.away+'</div>'
+      +'<div class="t10-sub">'+m.league+' · '+whenStr(m)+'</div></div>'
+      +'<div class="t10-pct">'+m.confidence+'%</div></div>';
+  });
+  return html+'<p style="font-size:12px;color:var(--text3);text-align:center;margin-top:10px">Tap any match to add to your Smart Acca</p>';
+}
+
+function renderLeagues(){
+  var byL={};
+  preds.forEach(function(m,i){if(!byL[m.league])byL[m.league]=[];byL[m.league].push({m:m,i:i});});
+  var html=sourceBadge();
+  Object.keys(byL).forEach(function(lg){
+    html+='<div class="lg-sec"><div class="lg-name">'+lg+'</div>';
+    byL[lg].forEach(function(x){html+=mCard(x.m,x.i);});
+    html+='</div>';
+  });
+  return html;
+}
+
+function renderGoals(){
+  var items=preds.map(function(m,i){return{m:m,i:i};}).filter(function(x){return x.m.goals_prediction&&x.m.goals_confidence;});
+  items.sort(function(a,b){return b.m.goals_confidence-a.m.goals_confidence;});
+  if(!items.length) return '<p style="color:var(--text3);text-align:center;padding:2rem;font-size:14px">No goals predictions today</p>';
+  var html=sourceBadge()+'<div class="sec-hdr"><div class="sec-t">Goals Predictions</div><span class="sec-c">'+items.length+' matches</span></div>';
+  items.forEach(function(x){html+=mCard(x.m,x.i);});
+  return html;
+}
+
+function renderWins(){
+  var items=preds.map(function(m,i){return{m:m,i:i};}).filter(function(x){return x.m.prediction==='Home Win'||x.m.prediction==='Away Win';});
+  items.sort(function(a,b){return b.m.confidence-a.m.confidence;});
+  if(!items.length) return '<p style="color:var(--text3);text-align:center;padding:2rem;font-size:14px">No straight win predictions today</p>';
+  var html=sourceBadge()+'<div class="sec-hdr"><div class="sec-t">Straight Win Picks</div><span class="sec-c">'+items.length+'</span></div>';
+  items.forEach(function(x){html+=mCard(x.m,x.i);});
+  return html;
+}
+
+function renderEdge(){
+  var items=preds.map(function(m,i){return{m:m,i:i};}).filter(function(x){return x.m._edge&&x.m._edge.edge_level!=='none';});
+  items.sort(function(a,b){return (b.m._edge.edge_score||0)-(a.m._edge.edge_score||0);});
+  var intro='<div class="edge-intro"><div class="edge-intro-t">⚡ The Edge — Narrative Intelligence</div><p>ScoutAI\'s exclusive engine reads the human stories behind fixtures — managerial pressure, revenge matches, derby psychology, and motivation gaps that pure stats miss.</p></div>';
+  if(!items.length) return intro+'<p style="color:var(--text3);text-align:center;padding:1rem;font-size:14px">No high-narrative matches today.</p>';
+  var html=intro+'<div class="sec-hdr"><div class="sec-t">Edge Pick of the Day</div></div>'+ecCard(items[0].m,items[0].i);
+  if(items.length>1){
+    html+='<div class="sec-hdr" style="margin-top:26px"><div class="sec-t">All Edge Matches</div><span class="sec-c">'+items.length+'</span></div>';
+    items.forEach(function(x){html+=ecCard(x.m,x.i);});
+  }
+  return html;
+}
+
+function ecCard(m,idx){
+  var e=m._edge;
+  return '<div class="edge-card" onclick="showMatchEdge('+idx+')">'
+    +'<div class="ec-top"><div><span class="lt">'+m.league+'</span><div class="ec-teams">'+m.home+' vs '+m.away+'</div>'
+    +'<div class="ec-sub">'+whenStr(m)+' · '+m.prediction+' · '+m.confidence+'%</div></div>'
+    +'<div class="e-score"><div class="es-v">'+e.edge_score+'</div><div class="es-l">Edge</div></div></div>'
+    +'<div class="ec-factors">'+(e.factors||[]).map(function(f){return '<span class="pill '+(f.type==='positive'?'pos':f.type==='negative'?'neg':'')+'">'+ f.label+'</span>';}).join('')+'</div>'
+    +(e.verdict?'<div class="ec-verdict">"'+e.verdict+'"</div>':'')+'</div>';
+}
+
+function renderAccaTab(){
+  var intro='<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:20px;text-align:center"><h3 style="font-size:16px;font-weight:600;margin-bottom:5px">Smart Accumulator Builder</h3><p style="font-size:13px;color:var(--text2)">Tap any match to add it. Pick 2–6 for your acca slip.</p></div>';
+  if(!picks.size) return intro+'<p style="color:var(--text3);text-align:center;padding:14px;font-size:14px">No picks selected yet</p>';
+  var items=Array.from(picks).map(function(i){return{m:preds[i],i:i};}).filter(function(x){return x.m;});
+  var html=intro+'<div class="sec-hdr"><div class="sec-t">Your Picks ('+picks.size+'/6)</div><span class="sec-c">Combined: '+combPct()+'%</span></div>';
+  items.forEach(function(x){html+=mCard(x.m,x.i);});
+  return html+'<button onclick="buildAcca()" style="width:100%;padding:12px;background:var(--primary);color:#fff;border-radius:var(--rl);font-size:14px;font-weight:600;margin-top:10px;font-family:Inter,sans-serif;border:none;cursor:pointer;box-shadow:var(--shadow)">Generate Acca Slip ↗</button>';
+}
+
+function showMatchEdge(idx){
+  var m=preds[idx];if(!m||!m._edge)return;
+  var e=m._edge,ll={none:'No Edge',low:'Low Edge',medium:'Edge',high:'High Edge',elite:'Elite Edge'};
+  document.getElementById('edgeBody').innerHTML='<div class="em">'
+    +'<div class="em-top"><div><span class="lt">'+m.league+'</span><div class="em-teams">'+m.home+' vs '+m.away+'</div><div class="em-sub">'+whenStr(m)+' · '+m.prediction+' · '+m.confidence+'%</div></div>'
+    +'<div class="e-score"><div class="es-v">'+e.edge_score+'</div><div class="es-l">'+(ll[e.edge_level]||'')+'</div></div></div>'
+    +(e.factors||[]).map(function(f){return '<div class="em-f" style="color:'+(f.type==='positive'?'#15803D':f.type==='negative'?'#DC2626':'var(--text2)')+'">'+f.label+'</div>';}).join('')
+    +(e.verdict?'<div class="em-v">"'+e.verdict+'"</div>':'')+'</div>'
+    +'<p style="font-size:12px;color:var(--text3);line-height:1.6;margin-top:12px">The Edge Score reflects how much narrative context could influence this result beyond what statistics alone predict.</p>';
+  openOv('edgeModal');
+}
+
+function showEdgeReport(){
+  var items=preds.map(function(m,i){return{m:m,i:i};}).filter(function(x){return x.m._edge&&x.m._edge.edge_level!=='none';});
+  items.sort(function(a,b){return (b.m._edge.edge_score||0)-(a.m._edge.edge_score||0);});
+  var ll={none:'No Edge',low:'Low Edge',medium:'Edge',high:'High Edge',elite:'Elite Edge'};
+  document.getElementById('edgeBody').innerHTML=items.length
+    ?items.map(function(x){var m=x.m,e=m._edge;return '<div class="em" style="margin-bottom:10px"><div class="em-top"><div><span class="lt">'+m.league+'</span><div class="em-teams">'+m.home+' vs '+m.away+'</div><div class="em-sub">'+whenStr(m)+' · '+m.prediction+' · '+m.confidence+'%</div></div><div class="e-score"><div class="es-v">'+e.edge_score+'</div><div class="es-l">'+(ll[e.edge_level]||'')+'</div></div></div>'+(e.factors||[]).map(function(f){return '<div class="em-f" style="color:'+(f.type==='positive'?'#15803D':f.type==='negative'?'#DC2626':'var(--text2)')+'">'+f.label+'</div>';}).join('')+(e.verdict?'<div class="em-v">"'+e.verdict+'"</div>':'')+'</div>';}).join('')
+    :'<p style="color:var(--text3);font-size:14px">No edge matches today.</p>';
+  openOv('edgeModal');
+}
+
+function togglePick(idx){
+  if(picks.has(idx))picks.delete(idx);
+  else{if(picks.size>=6){toast('Max 6 picks');return;}picks.add(idx);}
+  document.querySelectorAll('#mc'+idx+',#tc'+idx).forEach(function(el){el.classList.toggle('sel',picks.has(idx));});
+  var pip=document.getElementById('acPip');
+  pip.textContent=picks.size;pip.style.display=picks.size?'inline-flex':'none';
+  updateTray();if(curTab==='acca')renderPanel('acca');
+}
+function clearAcca(){
+  var prev=Array.from(picks);picks.clear();
+  prev.forEach(function(i){document.querySelectorAll('#mc'+i+',#tc'+i).forEach(function(el){el.classList.remove('sel');});});
+  document.getElementById('acPip').style.display='none';
+  updateTray();if(curTab==='acca')renderPanel('acca');
+}
+function combPct(){
+  if(!picks.size)return 0;
+  var p=1;picks.forEach(function(i){p*=(preds[i]?preds[i].confidence:50)/100;});return Math.round(p*100);
+}
+function updateTray(){
+  var t=document.getElementById('acTray');
+  if(!picks.size){t.style.display='none';return;}
+  t.style.display='';
+  document.getElementById('acPicks').innerHTML=Array.from(picks).map(function(i){var m=preds[i];return m?'<span class="ac-chip">'+m.home+' vs '+m.away+'</span>':'';}).join('');
+  document.getElementById('acProb').textContent=combPct()+'%';
+}
+function buildAcca(){
+  if(picks.size<2){toast('Add at least 2 picks');return;}
+  var items=Array.from(picks).map(function(i){return preds[i];}).filter(Boolean);
+  var cp=combPct();
+  document.getElementById('accaBody').innerHTML='<div class="am-top"><div class="am-title">'+items.length+'-Fold Accumulator</div><div class="am-sub">Combined probability: '+cp+'%</div></div>'
+    +items.map(function(m){return '<div class="am-pick"><div><div class="am-l">'+m.home+' vs '+m.away+'</div><div class="am-p">'+m.league+' · '+whenStr(m)+'</div></div><div class="am-c">'+m.confidence+'%</div></div>';}).join('')
+    +'<div class="am-sum"><span style="color:var(--text2)">Combined probability</span><span style="font-weight:600;color:var(--primary)">'+cp+'%</span></div>'
+    +'<div class="am-sum" style="margin-top:6px"><span style="color:var(--text2)">Risk level</span><span style="font-weight:600;color:'+(cp>50?'var(--primary)':cp>30?'var(--accent)':'var(--danger)')+'">'+( cp>50?'Moderate':cp>30?'Medium-High':'High Risk')+'</span></div>'
+    +'<p style="font-size:11px;color:var(--text3);margin-top:14px;text-align:center;line-height:1.6">For entertainment only. Please gamble responsibly.</p>';
+  openOv('accaModal');
+}
+function updateStats(){
+  var lgs=[];preds.forEach(function(m){if(lgs.indexOf(m.league)===-1)lgs.push(m.league);});
+  var top=preds.reduce(function(mx,m){return Math.max(mx,m.confidence);},0);
+  document.getElementById('sM').textContent=preds.length;
+  document.getElementById('sT').textContent=top+'%';
+  document.getElementById('sL').textContent=lgs.length;
+}
+function setLoading(on){
+  document.getElementById('scanBtn').disabled=on;
+  document.getElementById('sp').style.display=on?'inline':'none';
+  document.getElementById('scanLbl').textContent=on?'Loading...':'Scan Today';
+}
+function showErr(msg){document.getElementById('errMsg').textContent=msg;document.getElementById('errBox').style.display='';document.querySelectorAll('[id^="p-"]').forEach(function(p){p.style.display='none';});}
+function showEl(id){var e=document.getElementById(id);if(e)e.style.display='';}
+function hideEl(id){var e=document.getElementById(id);if(e)e.style.display='none';}
+function openOv(id){var e=document.getElementById(id);if(e){e.style.display='flex';document.body.style.overflow='hidden';}}
+function closeOv(id){var e=document.getElementById(id);if(e){e.style.display='none';document.body.style.overflow='';}}
+var _tt;
+function toast(msg){var e=document.getElementById('toast');e.textContent=msg;e.style.display='block';clearTimeout(_tt);_tt=setTimeout(function(){e.style.display='none';},2800);}
+</script>
+</body>
+</html>
