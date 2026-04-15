@@ -1,5 +1,0 @@
-{
-  "functions": {
-    "api/predict.js": { "maxDuration": 30 }
-  }
-}
