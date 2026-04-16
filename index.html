@@ -453,6 +453,16 @@ function scanDate(ds){
       if(!preds.length){
         setLoading(false); scanning=false;
         hideEl('emptyState');
+        // Auto-advance to tomorrow if today has nothing upcoming
+        if(ds === todayStr()){
+          var tom=new Date(); tom.setDate(tom.getDate()+1);
+          var tomStr=tom.toISOString().slice(0,10);
+          selDate=tomStr;
+          document.querySelectorAll('.date-pill').forEach(function(p){p.classList.toggle('active',p.dataset.date===tomStr);});
+          document.getElementById('hdrDate').textContent=fmtFull(tomStr);
+          setLoading(false); scanning=false;
+          scanDate(tomStr); return;
+        }
         panel.innerHTML='<div class="empty"><div class="empty-ico">📅</div><h2>No upcoming fixtures</h2><p>'+(r.d.message||'No matches scheduled for this date.')+'</p></div>';
         updateStats([]); return;
       }
@@ -721,7 +731,7 @@ var Oracle=(function(){
       var d=new Date(today+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()-i);
       var ds=d.toISOString().slice(0,10);
       var lbl=i===0?'Today':i===1?'Yest':d.toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'UTC'});
-      html+='<button class="o-date-btn'+(ds===curDate?' active':'')+'" data-date="'+ds+'" onclick="Oracle.select(\'' + ds + '\')">'+lbl+'</button>';
+      html+='<button class="o-date-btn'+(ds===curDate?' active':'')+'" data-date="'+ds+'" onclick="Oracle.select(this.dataset.date)">'+lbl+'</button>';
     }
     ['oDateNav','oDateNavMob'].forEach(function(id){
       var el=document.getElementById(id); if(!el)return;
