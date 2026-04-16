@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/predict.js": { "maxDuration": 30 },
+    "api/oracle.js":  { "maxDuration": 30 },
+    "api/cron.js":    { "maxDuration": 30 }
+  },
+  "crons": [
+    {
+      "path": "/api/cron",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}
