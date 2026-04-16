@@ -254,12 +254,30 @@ function findOddsMatch(home, away, kickoff, events) {
 
 function sim(a,b) {
   a=norm(a); b=norm(b);
+  if(!a||!b) return 0;
   if(a===b) return 1;
   if(a.includes(b)||b.includes(a)) return 0.9;
-  var wa=a.split(' '),wb=b.split(' ');
-  return wa.filter(function(w){return w.length>3&&wb.indexOf(w)!==-1;}).length>0 ? 0.75 : 0;
+  var wa=a.split(' ').filter(function(w){return w.length>2;});
+  var wb=b.split(' ').filter(function(w){return w.length>2;});
+  if(!wa.length||!wb.length) return 0;
+  var common=wa.filter(function(w){return wb.indexOf(w)!==-1;});
+  // Strong match if majority of shorter name's words match
+  var shorter=Math.min(wa.length,wb.length);
+  if(common.length>=shorter) return 0.85;
+  if(common.length>0) return 0.6;
+  return 0;
 }
-function norm(s){ return (s||'').toLowerCase().replace(/\bfc\b|\bsc\b|\bac\b|\bcf\b|\bfk\b/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim(); }
+function norm(s){
+  return (s||'').toLowerCase()
+    // Remove common club prefixes/suffixes
+    .replace(/\bfc\b|\bsc\b|\bac\b|\bcf\b|\bfk\b|\bsk\b|\bif\b|\bbk\b/g,'')
+    .replace(/\bclub\b|\bsporting\b|\bdeportivo\b|\batlético\b|\batletico\b/g,'')
+    .replace(/\b-rj\b|\b-sp\b|\b-mg\b|\b-pr\b/g,'') // Brazilian city suffixes
+    .replace(/\bsaint\b/g,'st').replace(/\bparis\b/g,'psg')
+    // Remove accents
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+}
 
 function getBestOdds(event) {
   var b={home:0,draw:0,away:0};
